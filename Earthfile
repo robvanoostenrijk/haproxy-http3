@@ -13,10 +13,10 @@ package:
 	FROM +build --SSL_LIBRARY=$SSL_LIBRARY
 
 	RUN set -x \
-&&		mkdir -p /build/dist \
-&&		XZ_OPT=-9 tar -C /usr/sbin -Jcvf /build/dist/haproxy.tar.xz haproxy
+&&		mkdir -p /tmp/dist \
+&&		tar -C /usr/sbin -zcvf /tmp/dist/haproxy.tar.gz haproxy
 
-	SAVE ARTIFACT /build/dist/haproxy.tar.xz AS LOCAL ./dist/haproxy.tar.xz
+	SAVE ARTIFACT /tmp/dist/haproxy.tar.gz AS LOCAL ./dist/haproxy.tar.gz
 
 all:
 	ARG SSL_LIBRARY=openssl
