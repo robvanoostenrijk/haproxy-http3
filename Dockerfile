@@ -41,7 +41,6 @@ if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --location https://github.com/qui
 #
 # LibreSSL
 #
-mkdir /usr/src/libressl
 if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
 
 #
@@ -63,8 +62,8 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --location https://github.com/li
 #
 # OpenSSL+quic1
 #
-cd /usr/src/openssl
 if [ "${SSL_LIBRARY}" = "openssl" ]; then
+  cd /usr/src/openssl
   CC=clang ./Configure no-shared no-tests linux-generic64
   make -j$(getconf _NPROCESSORS_ONLN) && make install_sw
   SSL_COMMIT="openssl+quic1-${OPENSSL_QUIC_TAG}"
@@ -73,8 +72,8 @@ fi
 #
 # LibreSSL
 #
-cd /usr/src/libressl
 if [ "${SSL_LIBRARY}" = "libressl" ]; then
+  cd /usr/src/libressl
   ./autogen.sh
   CC=clang CXX=clang++ ./configure \
     --disable-shared \
