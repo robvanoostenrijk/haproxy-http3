@@ -104,7 +104,6 @@ RUN <<EOF
 set -x
 cd /usr/src/haproxy
 make -j "$(getconf _NPROCESSORS_ONLN)" \
-    V=1 \
     TARGET=linux-musl \
     LDFLAGS="-g -w -static -s" \
     CPU=generic \
