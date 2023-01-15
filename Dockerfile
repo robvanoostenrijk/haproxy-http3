@@ -28,15 +28,10 @@ apk add --no-cache --virtual .build-deps \
   pcre2-dev \
   perl \
   readline-dev \
-  strace \
   tar \
-  util-linux \
   xz \
   --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
-EOF
 
-RUN <<EOF
-set -x
 mkdir -p /usr/src
 #
 # OpenSSL library (with QUIC support)
@@ -104,16 +99,14 @@ EOF
 #
 # Compile HAProxy
 #
-#		CFLAGS="-static -Wno-unused-function -Wno-sign-compare -Wno-unused-parameter -Wno-address-of-packed-member -Wno-missing-field-initializers -Wno-unused-label"
-#		LDFLAGS="-static"
-RUN set -x \
-&& cd /usr/src/haproxy \
-&& make -j "$(getconf _NPROCESSORS_ONLN)" \
+RUN <<EOF
+
+set -x
+cd /usr/src/haproxy
+make -j "$(getconf _NPROCESSORS_ONLN)" \
     V=1 \
     TARGET=linux-musl \
-    #CFLAGS="-O2 -g -Wall -Wextra -Wundef -Wdeclaration-after-statement -Wfatal-errors -Wtype-limits -Wshift-negative-value -Wshift-overflow=2 -Wduplicated-cond -Wnull-dereference -fwrapv -Wno-address-of-packed-member -Wno-unused-label -Wno-sign-compare -Wno-unused-parameter -Wno-clobbered -Wno-missing-field-initializers -Wno-cast-function-type -Wno-string-plus-int -Wno-atomic-alignment -static" \
-    LDFLAGS="-static -s" \
-    ADDLIB="-Wl,-Bstatic" \
+    LDFLAGS="-g -w -static -s" \
     CPU=generic \
     CC=clang \
     CXX=clang \
@@ -130,15 +123,15 @@ RUN set -x \
     USE_PCRE2=1 \
     USE_PCRE2_JIT=1 \
     USE_QUIC=1 \
-    USE_STATIC_PCRE2=1 \
+    USE_STATIC_PCRE2= \
     USE_TFO=1 \
     USE_THREAD=1 \
-    SUBVERS="-http3-${SSL_LIBRARY}" \
-&& make PREFIX=/usr install-bin \
-&& file /usr/sbin/haproxy \
-&& /usr/sbin/haproxy -vv
+    SUBVERS="-http3-${SSL_LIBRARY}"
+make PREFIX=/usr install-bin
+file /usr/sbin/haproxy
+/usr/sbin/haproxy -vv
 
-# EOF
+EOF
 
 FROM busybox
 
