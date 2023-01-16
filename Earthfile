@@ -21,5 +21,5 @@ all:
 	ARG SSL_LIBRARY=openssl
 
 	BUILD +clean
-	#BUILD --platform=linux/amd64 +package --PLATFORM=amd64 --SSL_LIBRARY=$SSL_LIBRARY
+	BUILD --platform=linux/amd64 +package --PLATFORM=amd64 --SSL_LIBRARY=$SSL_LIBRARY
 	BUILD --platform=linux/arm64 +package --PLATFORM=arm64 --SSL_LIBRARY=$SSL_LIBRARY
