@@ -1,0 +1,21 @@
+HTTP/1.0 200 OK
+Alt-Svc: h3=":443"; ma=86400
+Cache-Control: no-cache
+Connection: close
+Content-Type: text/html
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HAProxy Static Response</title>
+    <style>
+      .img-container { text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="img-container">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Haproxy-logo.png" />
+      <p>HAProxy Static Response</p>
+    </div>
+  </body>
+</html>

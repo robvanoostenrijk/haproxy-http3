@@ -10,6 +10,8 @@ ENV	OPENSSL_QUIC_TAG=openssl-3.0.7+quic1 \
     LUA_SHA256=164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61 \
     HAPROXY_VERSION=2.7.1
 
+COPY --link ["scratchfs", "/scratchfs"]
+
 RUN <<EOF
 set -ex
 apk add --no-cache --virtual .build-deps \
@@ -24,29 +26,45 @@ apk add --no-cache --virtual .build-deps \
   libtool \
   linux-headers \
   make \
+  openssl \
   patch \
   pcre2-dev \
   perl \
   readline-dev \
   tar \
-  xz \
   --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
+
+#
+# Prepare destination scratchfs
+#
+# Create self-signed certificate
+openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
+chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
+
+#
+# Mozilla CA cert bundle
+#
+curl --silent --location --compressed --output /scratchfs/etc/ssl/cacert.pem https://curl.haxx.se/ca/cacert.pem
+curl --silent --location --compressed --output /scratchfs/etc/ssl/cacert.pem.sha256 https://curl.haxx.se/ca/cacert.pem.sha256
+cd /scratchfs/etc/ssl
+sha256sum -c /scratchfs/etc/ssl/cacert.pem.sha256
+rm /scratchfs/etc/ssl/cacert.pem.sha256
 
 mkdir -p /usr/src
 #
 # OpenSSL library (with QUIC support)
 #
-if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --location https://github.com/quictls/openssl/archive/refs/tags/${OPENSSL_QUIC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1; fi
+if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://github.com/quictls/openssl/archive/refs/tags/${OPENSSL_QUIC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1; fi
 
 #
 # LibreSSL
 #
-if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
+if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
 
 #
 # LUA
 #
-  curl --location --output /usr/src/lua.tar.gz https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz
+  curl --silent --location --output /usr/src/lua.tar.gz https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz
   cd /usr/src
   echo "$LUA_SHA256 *lua.tar.gz" | sha256sum -c
   tar -xzf /usr/src/lua.tar.gz -C /usr/src --one-top-level=lua --strip-components=1
@@ -54,11 +72,11 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --location https://github.com/li
 #
 # libslz
 #
-  curl --location https://github.com/wtarreau/libslz/archive/refs/tags/${LIBSLZ_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libslz --strip-components=1
+  curl --silent --location https://github.com/wtarreau/libslz/archive/refs/tags/${LIBSLZ_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libslz --strip-components=1
 #
 # HAProxy
 #
-  curl --location http://www.haproxy.org/download/$(echo ${HAPROXY_VERSION} | cut -f 1-2 -d .)/src/haproxy-${HAPROXY_VERSION}.tar.gz | tar xz -C /usr/src --one-top-level=haproxy --strip-components=1
+  curl --silent --location http://www.haproxy.org/download/$(echo ${HAPROXY_VERSION} | cut -f 1-2 -d .)/src/haproxy-${HAPROXY_VERSION}.tar.gz | tar xz -C /usr/src --one-top-level=haproxy --strip-components=1
 #
 # OpenSSL+quic1
 #
@@ -129,27 +147,16 @@ make PREFIX=/usr install-bin
 file /usr/sbin/haproxy
 /usr/sbin/haproxy -vv
 
-EOF
-
-FROM busybox
-
-RUN <<EOF
-
-set -x
-echo "haproxy:x:1000:1000:haproxy:/bin:/bin/false" >> /etc/passwd
-echo "haproxy:x:1000:" >> /etc/group
-
-mkdir -p /var/lib/haproxy/stats
-chown -R haproxy:haproxy /var/lib/haproxy
+cp /usr/sbin/haproxy /scratchfs/usr/sbin/
 
 EOF
 
-COPY haproxy.cfg /etc/haproxy/haproxy.cfg
-COPY --from=builder /usr/sbin/haproxy /usr/sbin/haproxy
+FROM scratch
 
+COPY --from=builder /scratchfs /
+
+EXPOSE 8080/tcp 8443/tcp 8443/udp
 STOPSIGNAL SIGUSR1
-
-EXPOSE 80/tcp 443/tcp 443/udp
 
 ENTRYPOINT ["/usr/sbin/haproxy"]
 CMD ["-f", "/etc/haproxy/haproxy.cfg"]
