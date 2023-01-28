@@ -8,7 +8,7 @@ ENV	OPENSSL_QUIC_TAG=openssl-3.0.7+quic1 \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.4 \
     LUA_SHA256=164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61 \
-    HAPROXY_VERSION=2.7.1
+    HAPROXY_VERSION=2.7.2
 
 COPY --link ["scratchfs", "/scratchfs"]
 
