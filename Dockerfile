@@ -3,12 +3,13 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ENV	OPENSSL_QUIC_TAG=openssl-3.0.8-quic1 \
-    LIBRESSL_TAG=v3.7.2 \
+ENV OPENSSL_QUIC_TAG=openssl-3.0.8-quic1 \
+    LIBRESSL_TAG=v3.8.0 \
+    WOLFSSL_TAG=v5.6.0 \
     LIBSLZ_TAG=v1.2.1 \
-    LUA_VERSION=5.4.4 \
-    LUA_SHA256=164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61 \
-    HAPROXY_VERSION=2.7.8
+    LUA_VERSION=5.4.6 \
+    LUA_SHA256=7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88 \
+    HAPROXY_VERSION=2.8.0
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -62,11 +63,24 @@ if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://githu
 if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
 
 #
+# WolfSSL
+#
+#
+# WolfSSL
+#
+if [ "${SSL_LIBRARY}" = "wolfssl" ]; then 
+  curl --silent --location -o /usr/src/wolfssl.tar.gz https://github.com/wolfSSL/wolfssl/archive/refs/tags/${WOLFSSL_TAG}-stable.tar.gz
+  mkdir /usr/src/wolfssl
+  tar xzf /usr/src/wolfssl.tar.gz -C /usr/src/wolfssl --strip-components=1
+  rm /usr/src/wolfssl.tar.gz
+fi
+
+#
 # LUA
 #
   curl --silent --location --output /usr/src/lua.tar.gz https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz
   cd /usr/src
-  echo "$LUA_SHA256 *lua.tar.gz" | sha256sum -c
+  echo "$LUA_SHA256 lua.tar.gz" | sha256sum -c
   tar -xzf /usr/src/lua.tar.gz -C /usr/src --one-top-level=lua --strip-components=1
   rm /usr/src/lua.tar.gz
 #
@@ -99,6 +113,20 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then
     --enable-static
   make -j$(getconf _NPROCESSORS_ONLN) install
   SSL_COMMIT="libressl-${LIBRESSL_TAG}"
+fi
+#
+# WolfSSL
+#
+if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
+  cd /usr/src/wolfssl
+  ./autogen.sh
+  CC=clang CXX=clang++ ./configure \
+    --disable-shared \
+    --disable-tests \
+    --enable-static \
+    --enable-haproxy
+  make -j$(getconf _NPROCESSORS_ONLN) install
+  SSL_COMMIT="wolfssl-${WOLFSSL_TAG}"
 fi
 #
 # Compile LUA
