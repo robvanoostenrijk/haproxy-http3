@@ -3,13 +3,13 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ENV OPENSSL_QUIC_TAG=openssl-3.0.8-quic1 \
+ENV OPENSSL_QUIC_TAG=openssl-3.0.9-quic1 \
     LIBRESSL_TAG=v3.8.0 \
-    WOLFSSL_TAG=v5.6.0 \
+    WOLFSSL_TAG=v5.6.3-stable \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.6 \
     LUA_SHA256=7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88 \
-    HAPROXY_VERSION=2.8.0
+    HAPROXY_VERSION=2.8.1
 
 COPY --link ["scratchfs", "/scratchfs"]
 
