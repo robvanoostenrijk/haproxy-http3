@@ -3,7 +3,7 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ENV OPENSSL_QUIC_TAG=openssl-3.1.4-quic1 \
+ENV OPENSSL_QUIC_TAG=opernssl-3.1.5-quic1 \
     LIBRESSL_TAG=v3.8.2 \
     WOLFSSL_TAG=v5.6.6-stable \
     LIBSLZ_TAG=v1.2.1 \
