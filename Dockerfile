@@ -5,11 +5,12 @@ ARG SSL_LIBRARY
 
 ENV OPENSSL_QUIC_TAG=opernssl-3.1.5-quic1 \
     LIBRESSL_TAG=v3.8.2 \
-    WOLFSSL_TAG=v5.6.6-stable \
+    BORINGSSL_COMMIT=608becc67282174594fdaf0ec9c96daca9710d2f \
+    WOLFSSL_TAG=v5.6.6 \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.6 \
     LUA_SHA256=7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88 \
-    HAPROXY_VERSION=2.9.3
+    HAPROXY_VERSION=2.9.4
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -19,9 +20,11 @@ apk add --no-cache --virtual .build-deps \
   autoconf \
   automake \
   clang \
+  cmake \
   curl \
   file \
   git \
+  go \
   gnupg \
   libc-dev \
   libtool \
@@ -32,7 +35,9 @@ apk add --no-cache --virtual .build-deps \
   pcre2-dev \
   perl \
   readline-dev \
+  samurai \
   tar \
+  util-linux-misc \
   --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
 #
@@ -63,15 +68,17 @@ if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://githu
 if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
 
 #
-# WolfSSL
+# BoringSSL
 #
+if [ "${SSL_LIBRARY}" = "boringssl" ]; then curl --silent --location https://api.github.com/repos/google/boringssl/tarball/${BORINGSSL_COMMIT} | tar xz -C /usr/src --one-top-level=boringssl --strip-components=1 || exit 1; fi
+
 #
 # WolfSSL
 #
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then 
   curl --silent --location -o /usr/src/wolfssl.tar.gz https://github.com/wolfSSL/wolfssl/archive/refs/tags/${WOLFSSL_TAG}-stable.tar.gz
   mkdir /usr/src/wolfssl
-  tar xzf /usr/src/wolfssl.tar.gz -C /usr/src/wolfssl --strip-components=1
+  tar -xzf /usr/src/wolfssl.tar.gz -C /usr/src/wolfssl --strip-components=1
   rm /usr/src/wolfssl.tar.gz
 fi
 
@@ -115,16 +122,35 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then
   SSL_COMMIT="libressl-${LIBRESSL_TAG}"
 fi
 #
+# BoringSSL
+#
+if [ "${SSL_LIBRARY}" = "boringssl" ]; then
+  cd /usr/src/boringssl
+  CC=clang CXX=clang++ cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo .
+  ninja || exit 1
+  mkdir /opt/boringssl /opt/boringssl/lib
+  cp -r include /opt/boringssl
+  cp ssl/libssl.a crypto/libcrypto.a /opt/boringssl/lib
+  SSL_COMMIT="boringssl-${BORINGSSL_COMMIT:0:7}"
+fi
+#
 # WolfSSL
 #
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
   cd /usr/src/wolfssl
   ./autogen.sh
   CC=clang CXX=clang++ ./configure \
+    --disable-examples \
     --disable-shared \
-    --disable-tests \
     --enable-static \
-    --enable-haproxy
+    --enable-alpn \
+    --enable-earlydata \
+    --enable-haproxy \
+    --enable-quic \
+    --enable-tlsv12 \
+    --enable-tls13 \
+    --enable-curve25519 \
+    --enable-ed25519
   make -j$(getconf _NPROCESSORS_ONLN) install
   SSL_COMMIT="wolfssl-${WOLFSSL_TAG}"
 fi
@@ -138,40 +164,96 @@ fi
 #
   cd /usr/src/libslz
   make CC=clang static
-
 EOF
 
 #
 # Compile HAProxy
 #
 RUN <<EOF
-
 set -x
 cd /usr/src/haproxy
-make -j "$(getconf _NPROCESSORS_ONLN)" \
-    TARGET=linux-musl \
-    LDFLAGS="-g -w -static -s" \
-    CPU=generic \
-    CC=clang \
-    CXX=clang \
-    LUA_INC=/usr/src/lua/src \
-    LUA_LIB=/usr/src/lua/src \
-    SLZ_INC=/usrc/src/libslz/src \
-    SLZ_LIB=/usr/src/libslz \
-    USE_CPU_AFFINITY=1 \
-    USE_GETADDRINFO=1 \
-    USE_LIBCRYPT=1 \
-    USE_LUA=1 \
-    USE_NS=1 \
-    USE_OPENSSL=1 \
-    USE_PCRE2=1 \
-    USE_PCRE2_JIT=1 \
-    USE_QUIC=1 \
-    USE_STATIC_PCRE2= \
-    USE_TFO=1 \
-    USE_THREAD=1 \
-    SUBVERS="-http3-${SSL_LIBRARY}"
+
+if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
+  make -j "$(getconf _NPROCESSORS_ONLN)" \
+        TARGET=linux-musl \
+        LDFLAGS="-g -w -static -s" \
+        CPU=generic \
+        CC=clang \
+        CXX=clang \
+        LUA_INC=/usr/src/lua/src \
+        LUA_LIB=/usr/src/lua/src \
+        SLZ_INC=/usrc/src/libslz/src \
+        SLZ_LIB=/usr/src/libslz \
+        SSL_INC=/usr/local/include/wolfssl \
+        USE_CPU_AFFINITY=1 \
+        USE_GETADDRINFO=1 \
+        USE_LIBCRYPT=1 \
+        USE_LUA=1 \
+        USE_NS=1 \
+        USE_OPENSSL=1 \
+        USE_OPENSSL_WOLFSSL=1 \
+        USE_PCRE2=1 \
+        USE_PCRE2_JIT=1 \
+        USE_QUIC=1 \
+        USE_STATIC_PCRE2= \
+        USE_TFO=1 \
+        USE_THREAD=1 \
+        SUBVERS="-http3-${SSL_LIBRARY}"
+elif [ "${SSL_LIBRARY}" = "boringssl" ]; then
+  make -j "$(getconf _NPROCESSORS_ONLN)" \
+        TARGET=linux-musl \
+        LDFLAGS="-g -w -static -s" \
+        DEFINE="-DOPENSSL_NO_OCSP" \
+        CPU=generic \
+        CC=clang \
+        CXX=clang \
+        LUA_INC=/usr/src/lua/src \
+        LUA_LIB=/usr/src/lua/src \
+        SLZ_INC=/usrc/src/libslz/src \
+        SLZ_LIB=/usr/src/libslz \
+        SSL_INC=/opt/boringssl/include \
+        SSL_LIB=/opt/boringssl/lib \
+        USE_CPU_AFFINITY=1 \
+        USE_GETADDRINFO=1 \
+        USE_LIBCRYPT=1 \
+        USE_LUA=1 \
+        USE_NS=1 \
+        USE_OPENSSL=1 \
+        USE_PCRE2=1 \
+        USE_PCRE2_JIT=1 \
+        USE_QUIC=1 \
+        USE_STATIC_PCRE2= \
+        USE_TFO=1 \
+        USE_THREAD=1 \
+        SUBVERS="-http3-${SSL_LIBRARY}"
+else
+  make -j "$(getconf _NPROCESSORS_ONLN)" \
+        TARGET=linux-musl \
+        LDFLAGS="-g -w -static -s" \
+        CPU=generic \
+        CC=clang \
+        CXX=clang \
+        LUA_INC=/usr/src/lua/src \
+        LUA_LIB=/usr/src/lua/src \
+        SLZ_INC=/usrc/src/libslz/src \
+        SLZ_LIB=/usr/src/libslz \
+        USE_CPU_AFFINITY=1 \
+        USE_GETADDRINFO=1 \
+        USE_LIBCRYPT=1 \
+        USE_LUA=1 \
+        USE_NS=1 \
+        USE_OPENSSL=1 \
+        USE_PCRE2=1 \
+        USE_PCRE2_JIT=1 \
+        USE_QUIC=1 \
+        USE_STATIC_PCRE2= \
+        USE_TFO=1 \
+        USE_THREAD=1 \
+        SUBVERS="-http3-${SSL_LIBRARY}"
+fi
+
 make PREFIX=/usr install-bin
+ls -lh /usr/sbin/haproxy
 file /usr/sbin/haproxy
 /usr/sbin/haproxy -vv
 
@@ -179,12 +261,12 @@ cp /usr/sbin/haproxy /scratchfs/usr/sbin/
 
 EOF
 
-FROM scratch
+#FROM scratch
+#
+#COPY --from=builder /scratchfs /
+#
+#EXPOSE 8080/tcp 8443/tcp 8443/udp
+#STOPSIGNAL SIGUSR1
 
-COPY --from=builder /scratchfs /
-
-EXPOSE 8080/tcp 8443/tcp 8443/udp
-STOPSIGNAL SIGUSR1
-
-ENTRYPOINT ["/usr/sbin/haproxy"]
-CMD ["-f", "/etc/haproxy/haproxy.cfg"]
+#ENTRYPOINT ["/usr/sbin/haproxy"]
+#CMD ["-f", "/etc/haproxy/haproxy.cfg"]
