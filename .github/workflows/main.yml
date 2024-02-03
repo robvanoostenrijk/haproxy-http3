@@ -12,9 +12,10 @@ jobs:
     strategy:
       matrix:
         library:
-          - libressl
-          - openssl
-          - wolfssl
+          - "libressl"
+          - "openssl"
+          - "wolfssl"
+          - "aws-lc"
     steps:
       - name: Checkout from GitHub
         uses: actions/checkout@v3

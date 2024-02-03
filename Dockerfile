@@ -5,7 +5,7 @@ ARG SSL_LIBRARY
 
 ENV OPENSSL_QUIC_TAG=opernssl-3.1.5-quic1 \
     LIBRESSL_TAG=v3.8.2 \
-    BORINGSSL_COMMIT=608becc67282174594fdaf0ec9c96daca9710d2f \
+    AWS_LC_TAG=v1.21.0 \
     WOLFSSL_TAG=v5.6.6 \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.6 \
@@ -68,9 +68,9 @@ if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://githu
 if [ "${SSL_LIBRARY}" = "libressl" ]; then curl --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1; fi
 
 #
-# BoringSSL
+# AWS-LC
 #
-if [ "${SSL_LIBRARY}" = "boringssl" ]; then curl --silent --location https://api.github.com/repos/google/boringssl/tarball/${BORINGSSL_COMMIT} | tar xz -C /usr/src --one-top-level=boringssl --strip-components=1 || exit 1; fi
+if [ "${SSL_LIBRARY}" = "aws-lc" ]; then curl --silent --location https://github.com/aws/aws-lc/archive/refs/tags/${AWS_LC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=aws-lc --strip-components=1; fi
 
 #
 # WolfSSL
@@ -122,16 +122,16 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then
   SSL_COMMIT="libressl-${LIBRESSL_TAG}"
 fi
 #
-# BoringSSL
+# AWS-LC
 #
-if [ "${SSL_LIBRARY}" = "boringssl" ]; then
-  cd /usr/src/boringssl
-  CC=clang CXX=clang++ cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo .
-  ninja || exit 1
-  mkdir /opt/boringssl /opt/boringssl/lib
-  cp -r include /opt/boringssl
-  cp ssl/libssl.a crypto/libcrypto.a /opt/boringssl/lib
-  SSL_COMMIT="boringssl-${BORINGSSL_COMMIT:0:7}"
+if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
+  cd /usr/src/aws-lc
+  mkdir -p .openssl/lib .openssl/include
+  ln -sf /usr/src/aws-lc/include/openssl /usr/src/aws-lc/.openssl/include/openssl
+  CC=clang CXX=clang++ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release
+  ninja -C build || exit 1
+  cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
+  SSL_COMMIT="AWS-LC-${AWS_LC_TAG}"
 fi
 #
 # WolfSSL
@@ -173,84 +173,50 @@ RUN <<EOF
 set -x
 cd /usr/src/haproxy
 
+# Default make options
+# Note: USE_PCRE2_STATIC is implied due to static LD_FLAGS
+MAKE_OPTS=" \
+        TARGET=linux-musl \
+        CPU=generic \
+        CC=clang \
+        CXX=clang \
+        LUA_INC=/usr/src/lua/src \
+        LUA_LIB=/usr/src/lua/src \
+        SLZ_INC=/usrc/src/libslz/src \
+        SLZ_LIB=/usr/src/libslz \
+        USE_CPU_AFFINITY=1 \
+        USE_GETADDRINFO=1 \
+        USE_LIBCRYPT=1 \
+        USE_LUA=1 \
+        USE_NS=1 \
+        USE_OPENSSL=1 \
+        USE_PCRE2=1 \
+        USE_PCRE2_JIT=1 \
+        USE_QUIC=1 \
+        USE_TFO=1 \
+        USE_THREAD=1 \
+        "
+
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
-  make -j "$(getconf _NPROCESSORS_ONLN)" \
-        TARGET=linux-musl \
-        LDFLAGS="-g -w -static -s" \
-        CPU=generic \
-        CC=clang \
-        CXX=clang \
-        LUA_INC=/usr/src/lua/src \
-        LUA_LIB=/usr/src/lua/src \
-        SLZ_INC=/usrc/src/libslz/src \
-        SLZ_LIB=/usr/src/libslz \
-        SSL_INC=/usr/local/include/wolfssl \
-        USE_CPU_AFFINITY=1 \
-        USE_GETADDRINFO=1 \
-        USE_LIBCRYPT=1 \
-        USE_LUA=1 \
-        USE_NS=1 \
-        USE_OPENSSL=1 \
-        USE_OPENSSL_WOLFSSL=1 \
-        USE_PCRE2=1 \
-        USE_PCRE2_JIT=1 \
-        USE_QUIC=1 \
-        USE_STATIC_PCRE2= \
-        USE_TFO=1 \
-        USE_THREAD=1 \
-        SUBVERS="-http3-${SSL_LIBRARY}"
-elif [ "${SSL_LIBRARY}" = "boringssl" ]; then
-  make -j "$(getconf _NPROCESSORS_ONLN)" \
-        TARGET=linux-musl \
-        LDFLAGS="-g -w -static -s" \
-        DEFINE="-DOPENSSL_NO_OCSP" \
-        CPU=generic \
-        CC=clang \
-        CXX=clang \
-        LUA_INC=/usr/src/lua/src \
-        LUA_LIB=/usr/src/lua/src \
-        SLZ_INC=/usrc/src/libslz/src \
-        SLZ_LIB=/usr/src/libslz \
-        SSL_INC=/opt/boringssl/include \
-        SSL_LIB=/opt/boringssl/lib \
-        USE_CPU_AFFINITY=1 \
-        USE_GETADDRINFO=1 \
-        USE_LIBCRYPT=1 \
-        USE_LUA=1 \
-        USE_NS=1 \
-        USE_OPENSSL=1 \
-        USE_PCRE2=1 \
-        USE_PCRE2_JIT=1 \
-        USE_QUIC=1 \
-        USE_STATIC_PCRE2= \
-        USE_TFO=1 \
-        USE_THREAD=1 \
-        SUBVERS="-http3-${SSL_LIBRARY}"
-else
-  make -j "$(getconf _NPROCESSORS_ONLN)" \
-        TARGET=linux-musl \
-        LDFLAGS="-g -w -static -s" \
-        CPU=generic \
-        CC=clang \
-        CXX=clang \
-        LUA_INC=/usr/src/lua/src \
-        LUA_LIB=/usr/src/lua/src \
-        SLZ_INC=/usrc/src/libslz/src \
-        SLZ_LIB=/usr/src/libslz \
-        USE_CPU_AFFINITY=1 \
-        USE_GETADDRINFO=1 \
-        USE_LIBCRYPT=1 \
-        USE_LUA=1 \
-        USE_NS=1 \
-        USE_OPENSSL=1 \
-        USE_PCRE2=1 \
-        USE_PCRE2_JIT=1 \
-        USE_QUIC=1 \
-        USE_STATIC_PCRE2= \
-        USE_TFO=1 \
-        USE_THREAD=1 \
-        SUBVERS="-http3-${SSL_LIBRARY}"
+  MAKE_OPTS_EXTRA=" \
+    SSL_INC=/usr/local/include/wolfssl
+    USE_OPENSSL_WOLFSSL=1 \
+    "
 fi
+
+if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
+  MAKE_OPTS_EXTRA=" \
+    SSL_INC=/usr/src/aws-lc/.openssl/include \
+    SSL_LIB=/usr/src/aws-lc/.openssl/lib \
+    USE_OPENSSL_AWSLC=1 \
+    "
+fi
+
+make -j "$(getconf _NPROCESSORS_ONLN)" \
+  $MAKE_OPTS \
+  $MAKE_OPTS_EXTRA \
+  LDFLAGS="-g -w -static -s" \
+  SUBVERS="-http3-${SSL_LIBRARY}"
 
 make PREFIX=/usr install-bin
 ls -lh /usr/sbin/haproxy
@@ -261,12 +227,12 @@ cp /usr/sbin/haproxy /scratchfs/usr/sbin/
 
 EOF
 
-#FROM scratch
-#
-#COPY --from=builder /scratchfs /
-#
-#EXPOSE 8080/tcp 8443/tcp 8443/udp
-#STOPSIGNAL SIGUSR1
+FROM scratch
 
-#ENTRYPOINT ["/usr/sbin/haproxy"]
-#CMD ["-f", "/etc/haproxy/haproxy.cfg"]
+COPY --from=builder /scratchfs /
+
+EXPOSE 8080/tcp 8443/tcp 8443/udp
+STOPSIGNAL SIGUSR1
+
+ENTRYPOINT ["/usr/sbin/haproxy"]
+CMD ["-f", "/etc/haproxy/haproxy.cfg"]
