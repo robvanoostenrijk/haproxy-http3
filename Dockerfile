@@ -5,7 +5,7 @@ ARG SSL_LIBRARY
 
 ENV OPENSSL_QUIC_TAG=opernssl-3.1.5-quic1 \
     LIBRESSL_TAG=v3.8.2 \
-    AWS_LC_TAG=v1.21.0 \
+    AWS_LC_TAG=v1.22.0 \
     WOLFSSL_TAG=v5.6.6 \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.6 \
