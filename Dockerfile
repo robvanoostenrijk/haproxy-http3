@@ -5,12 +5,12 @@ ARG SSL_LIBRARY
 
 ENV OPENSSL_QUIC_TAG=openssl-3.1.5-quic1 \
     LIBRESSL_TAG=v3.9.2 \
-    AWS_LC_TAG=v1.28.0 \
+    AWS_LC_TAG=v1.29.0 \
     WOLFSSL_TAG=v5.7.0 \
     LIBSLZ_TAG=v1.2.1 \
     LUA_VERSION=5.4.6 \
     LUA_SHA256=7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88 \
-    HAPROXY_VERSION=3.0.0
+    HAPROXY_VERSION=3.0.1
 
 COPY --link ["scratchfs", "/scratchfs"]
 
