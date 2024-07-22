@@ -8,14 +8,15 @@ ENV OPENSSL_QUIC_TAG=openssl-3.1.5-quic1 \
     AWS_LC_TAG=v1.32.0 \
     WOLFSSL_TAG=v5.7.2 \
     LIBSLZ_TAG=v1.2.1 \
-    LUA_VERSION=5.4.7 \
-    LUA_SHA256=9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30 \
     HAPROXY_VERSION=3.0.3
 
 COPY --link ["scratchfs", "/scratchfs"]
 
 RUN <<EOF
 set -ex
+sed -i -r 's/v\d+\.\d+/edge/g' /etc/apk/repositories
+apk update
+apk upgrade --no-interactive --latest
 apk add --no-cache --virtual .build-deps \
   autoconf \
   automake \
@@ -29,6 +30,7 @@ apk add --no-cache --virtual .build-deps \
   libc-dev \
   libtool \
   linux-headers \
+  lua5.4-dev \
   make \
   openssl \
   patch \
@@ -83,17 +85,10 @@ if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
 fi
 
 #
-# LUA
-#
-  curl --silent --location --output /usr/src/lua.tar.gz https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz
-  cd /usr/src
-  echo "$LUA_SHA256 lua.tar.gz" | sha256sum -c
-  tar -xzf /usr/src/lua.tar.gz -C /usr/src --one-top-level=lua --strip-components=1
-  rm /usr/src/lua.tar.gz
-#
 # libslz
 #
-  curl --silent --location https://github.com/wtarreau/libslz/archive/refs/tags/${LIBSLZ_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libslz --strip-components=1
+curl --silent --location https://github.com/wtarreau/libslz/archive/refs/tags/${LIBSLZ_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libslz --strip-components=1
+
 #
 # HAProxy
 #
@@ -121,6 +116,7 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then
   make -j$(getconf _NPROCESSORS_ONLN) install
   SSL_COMMIT="libressl-${LIBRESSL_TAG}"
 fi
+
 #
 # AWS-LC
 #
@@ -133,6 +129,7 @@ if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
   cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
   SSL_COMMIT="AWS-LC-${AWS_LC_TAG}"
 fi
+
 #
 # WolfSSL
 #
@@ -154,11 +151,7 @@ if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
   make -j$(getconf _NPROCESSORS_ONLN) install
   SSL_COMMIT="wolfssl-${WOLFSSL_TAG}"
 fi
-#
-# Compile LUA
-#
-  cd /usr/src/lua
-  make CC=clang -j "$(getconf _NPROCESSORS_ONLN)" linux
+
 #
 # Compile libslz
 #
@@ -166,10 +159,10 @@ fi
   make CC=clang static
 EOF
 
+RUN <<EOF
 #
 # Compile HAProxy
 #
-RUN <<EOF
 set -x
 cd /usr/src/haproxy
 
@@ -180,10 +173,11 @@ MAKE_OPTS=" \
         CPU=generic \
         CC=clang \
         CXX=clang \
-        LUA_INC=/usr/src/lua/src \
-        LUA_LIB=/usr/src/lua/src \
         SLZ_INC=/usrc/src/libslz/src \
         SLZ_LIB=/usr/src/libslz \
+        LUA_INC=/usr/include/lua5.4 \
+        LUA_LIB=/usr/lib/lua5.4 \
+        LUA_LIB_NAME=lua \
         USE_CPU_AFFINITY=1 \
         USE_GETADDRINFO=1 \
         USE_LIBCRYPT=1 \
