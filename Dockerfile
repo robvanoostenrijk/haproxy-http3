@@ -3,7 +3,7 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ENV OPENSSL_QUIC_TAG=openssl-3.1.7-quic1 \
+ENV OPENSSL_TAG=openssl-3.3.2 \
     LIBRESSL_TAG=v3.9.2 \
     AWS_LC_TAG=v1.36.0 \
     WOLFSSL_TAG=v5.7.2 \
@@ -62,7 +62,7 @@ mkdir -p /usr/src
 #
 # OpenSSL library (with QUIC support)
 #
-if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://github.com/quictls/openssl/archive/refs/tags/${OPENSSL_QUIC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1; fi
+if [ "${SSL_LIBRARY}" = "openssl" ]; then curl --silent --location https://github.com/openssl/openssl/archive/refs/tags/${OPENSSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1; fi
 
 #
 # LibreSSL
@@ -100,7 +100,6 @@ if [ "${SSL_LIBRARY}" = "openssl" ]; then
   cd /usr/src/openssl
   CC=clang ./Configure no-shared no-tests linux-generic64
   make -j$(getconf _NPROCESSORS_ONLN) && make install_sw
-  SSL_COMMIT="openssl+quic1-${OPENSSL_QUIC_TAG}"
 fi
 
 #
@@ -114,7 +113,6 @@ if [ "${SSL_LIBRARY}" = "libressl" ]; then
     --disable-tests \
     --enable-static
   make -j$(getconf _NPROCESSORS_ONLN) install
-  SSL_COMMIT="libressl-${LIBRESSL_TAG}"
 fi
 
 #
@@ -127,7 +125,6 @@ if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
   CC=clang CXX=clang++ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release
   ninja -C build || exit 1
   cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
-  SSL_COMMIT="AWS-LC-${AWS_LC_TAG}"
 fi
 
 #
@@ -149,7 +146,6 @@ if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
     --enable-curve25519 \
     --enable-ed25519
   make -j$(getconf _NPROCESSORS_ONLN) install
-  SSL_COMMIT="wolfssl-${WOLFSSL_TAG}"
 fi
 
 #
@@ -190,6 +186,12 @@ MAKE_OPTS=" \
         USE_TFO=1 \
         USE_THREAD=1 \
         "
+
+if [ "${SSL_LIBRARY}" = "openssl" ]; then
+  MAKE_OPTS_EXTRA=" \
+    USE_QUIC_OPENSSL_COMPAT=1 \
+    "
+fi
 
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
   MAKE_OPTS_EXTRA=" \
