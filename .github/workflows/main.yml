@@ -85,12 +85,10 @@ jobs:
 
           for library in ${libraries[@]}; do
             echo " - haproxy-${library}" >> ./release.txt
-            echo "<details>" >> ./release.txt
-            echo "  <summary>Version information</summary>" >> ./release.txt
-            echo "\`\`\`" >> ./release.txt
-            echo "$(cat ./haproxy-${library}/version.txt)" >> ./release.txt
-            echo "\`\`\`" >> ./release.txt
-            echo "</details>" >> ./release.txt
+            echo "    <details>" >> ./release.txt
+            echo "      <summary>Version information</summary>" >> ./release.txt
+            echo "$(cat ./haproxy-${library}/version.txt) | sed 's/\(.*\)/        \1/'" >> ./release.txt
+            echo "    </details>" >> ./release.txt
           done
 
           echo "#### SHA256 Checksums:" >> ./release.txt
