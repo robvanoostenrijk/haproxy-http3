@@ -83,11 +83,13 @@ jobs:
 
           echo "#### Versions:" >> ./release.txt
 
+          VERSION=$(cat ./haproxy-${library}/version.txt | awk '{ print "        " $0 }')
+
           for library in ${libraries[@]}; do
             echo " - haproxy-${library}" >> ./release.txt
             echo "    <details>" >> ./release.txt
             echo "      <summary>Version information</summary>" >> ./release.txt
-            echo "$(cat ./haproxy-${library}/version.txt) | sed 's/\(.*\)/        \1/'" >> ./release.txt
+            echo "${VERSION}" >> ./release.txt
             echo "    </details>" >> ./release.txt
           done
 
