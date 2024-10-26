@@ -1,0 +1,4 @@
+# syntax=docker/dockerfile:1
+FROM alpine:latest AS builder
+
+ARG SSL_LIBRARY
