@@ -3,7 +3,7 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ARG AWS_LC_TAG=v1.48.5 \
+ARG AWS_LC_TAG=v1.49.0 \
 	LIBRESSL_TAG=v3.9.2 \
 	OPENSSL_TAG=openssl-3.4.1 \
 	WOLFSSL_TAG=v5.7.6 \
@@ -35,7 +35,6 @@ apk add --no-cache --virtual .build-deps \
 	openssl \
 	patch \
 	pcre2-dev \
-	pcre2-static \
 	perl \
 	readline-dev \
 	samurai \
