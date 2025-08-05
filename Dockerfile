@@ -1,4 +1,7 @@
 # syntax=docker/dockerfile:1
+##################################################
+# haproxy with HTTP/3
+##################################################
 FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
@@ -9,6 +12,11 @@ ARG AWS_LC_TAG=v1.56.0 \
 	WOLFSSL_TAG=v5.8.2 \
 	LIBSLZ_TAG=v1.2.1 \
 	HAPROXY_VERSION=3.2.3
+
+ARG UID=1000
+ARG GID=1000
+
+ARG SSL_LIBRARY
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -47,8 +55,9 @@ apk add --no-cache --virtual .build-deps \
 # Prepare destination scratchfs
 #
 # Create self-signed certificate
-openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
-chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
+mkdir -p /scratchfs/etc/ssl/private
+openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/private/localhost.pem.key -out /scratchfs/etc/ssl/private/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
+chown ${UID}:${GID} /scratchfs/etc/ssl/private/localhost.pem.key
 
 #
 # Mozilla CA cert bundle
@@ -78,7 +87,7 @@ if [ "${SSL_LIBRARY}" = "aws-lc" ]; then curl --silent --location https://github
 #
 # WolfSSL
 #
-if [ "${SSL_LIBRARY}" = "wolfssl" ]; then 
+if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
 	curl --silent --location -o /usr/src/wolfssl.tar.gz https://github.com/wolfSSL/wolfssl/archive/refs/tags/${WOLFSSL_TAG}-stable.tar.gz
 	mkdir /usr/src/wolfssl
 	tar -xzf /usr/src/wolfssl.tar.gz -C /usr/src/wolfssl --strip-components=1
@@ -221,7 +230,26 @@ ls -lh /usr/sbin/haproxy
 file /usr/sbin/haproxy
 /usr/sbin/haproxy -vv
 
+EOF
+
+RUN <<EOF
+set -x
+
+# Populate /scratchfs
+mkdir -p \
+	/scratchfs/run \
+	/scratchfs/tmp \
+	/scratchfs/usr/sbin
+
+chmod 1777 /scratchfs/run /scratchfs/tmp
+
 cp /usr/sbin/haproxy /scratchfs/usr/sbin/
+
+echo "root:x:0:" > /scratchfs/etc/group
+echo "haproxy:x:${GID}:" >> /scratchfs/etc/group
+
+echo "root:x:0:0:root:/root:/dev/null" > /scratchfs/etc/passwd
+echo "haproxy:x:${UID}:${GID}:haproxy:/etc/haproxy:/dev/null" >> /scratchfs/etc/passwd
 
 EOF
 

@@ -1,4 +1,7 @@
 # syntax=docker/dockerfile:1
+##################################################
+# haproxy with HTTP/3
+##################################################
 FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
