@@ -8,7 +8,7 @@ ARG AWS_LC_TAG=v1.64.0 \
 	OPENSSL_TAG=openssl-3.6.0 \
 	WOLFSSL_TAG=v5.8.2 \
 	LIBSLZ_TAG=v1.2.1 \
-	HAPROXY_VERSION=3.2.7
+	HAPROXY_VERSION=3.2.8
 
 COPY --link ["scratchfs", "/scratchfs"]
 
