@@ -174,6 +174,7 @@ MAKE_OPTS=" \
 		USE_PCRE2=1 \
 		USE_PCRE2_JIT=1 \
 		USE_QUIC=1 \
+		USE_SLZ=1 \
 		USE_TFO=1 \
 		USE_THREAD=1 \
 		"
