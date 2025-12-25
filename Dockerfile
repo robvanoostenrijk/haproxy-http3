@@ -4,7 +4,7 @@ FROM alpine:latest AS builder
 ARG SSL_LIBRARY
 
 ARG AWS_LC_TAG=v1.66.1 \
-	LIBRESSL_TAG=v4.2.1 \
+	LIBRESSL_TAG=v4.1.2 \
 	OPENSSL_TAG=openssl-3.6.0 \
 	WOLFSSL_TAG=v5.8.4 \
 	LIBSLZ_TAG=v1.2.1 \
@@ -189,12 +189,6 @@ MAKE_OPTS=" \
 		USE_TFO=1 \
 		USE_THREAD=1 \
 		"
-
-if [ "${SSL_LIBRARY}" = "openssl" ]; then
-MAKE_OPTS_EXTRA=" \
-	USE_QUIC_OPENSSL_COMPAT=1 \
-	"
-fi
 
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
 MAKE_OPTS_EXTRA=" \

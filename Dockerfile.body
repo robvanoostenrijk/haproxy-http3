@@ -179,12 +179,6 @@ MAKE_OPTS=" \
 		USE_THREAD=1 \
 		"
 
-if [ "${SSL_LIBRARY}" = "openssl" ]; then
-MAKE_OPTS_EXTRA=" \
-	USE_QUIC_OPENSSL_COMPAT=1 \
-	"
-fi
-
 if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
 MAKE_OPTS_EXTRA=" \
 	SSL_INC=/usr/local/include/wolfssl
