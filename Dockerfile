@@ -3,7 +3,7 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ARG AWS_LC_TAG=v1.66.2 \
+ARG AWS_LC_TAG=v1.67.0 \
 	LIBRESSL_TAG=v4.1.2 \
 	OPENSSL_TAG=openssl-3.6.0 \
 	WOLFSSL_TAG=v5.8.4 \
