@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         library:
-          - libressl
-          - openssl
-          - wolfssl
+#          - libressl
+#          - openssl
+#          - wolfssl
           - aws-lc
     steps:
       - name: Checkout from GitHub
@@ -77,7 +77,8 @@ jobs:
         shell: bash
         run: |
           platforms=("linux-amd64" "linux-arm64")
-          libraries=("aws-lc" "libressl" "openssl" "wolfssl")
+#          libraries=("aws-lc" "libressl" "openssl" "wolfssl")
+          libraries=("aws-lc")
 
           git log -1 --no-merges --pretty=%B > ./release.txt
 
@@ -110,12 +111,12 @@ jobs:
           files: |
             ./haproxy-aws-lc/haproxy-http3-aws-lc-linux-amd64.tar.xz
             ./haproxy-aws-lc/haproxy-http3-aws-lc-linux-arm64.tar.xz
-            ./haproxy-libressl/haproxy-http3-libressl-linux-amd64.tar.xz
-            ./haproxy-libressl/haproxy-http3-libressl-linux-arm64.tar.xz
-            ./haproxy-openssl/haproxy-http3-openssl-linux-amd64.tar.xz
-            ./haproxy-openssl/haproxy-http3-openssl-linux-arm64.tar.xz
-            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-amd64.tar.xz
-            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-arm64.tar.xz
+#            ./haproxy-libressl/haproxy-http3-libressl-linux-amd64.tar.xz
+#            ./haproxy-libressl/haproxy-http3-libressl-linux-arm64.tar.xz
+#            ./haproxy-openssl/haproxy-http3-openssl-linux-amd64.tar.xz
+#            ./haproxy-openssl/haproxy-http3-openssl-linux-arm64.tar.xz
+#            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-amd64.tar.xz
+#            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-arm64.tar.xz
       - name: Remove old packages
         uses: actions/delete-package-versions@v5
         with:
