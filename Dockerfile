@@ -216,6 +216,7 @@ ls -lh /usr/sbin/haproxy
 file /usr/sbin/haproxy
 /usr/sbin/haproxy -vv
 
+mkdir -p /scratchfs/etc/haproxy/conf.d /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
 cp /usr/sbin/haproxy /scratchfs/usr/sbin/
 
 EOF
@@ -228,4 +229,4 @@ EXPOSE 8080/tcp 8443/tcp 8443/udp
 STOPSIGNAL SIGUSR1
 
 ENTRYPOINT ["/usr/sbin/haproxy"]
-CMD ["-f", "/etc/haproxy/haproxy.cfg"]
+CMD ["-f", "/etc/haproxy/haproxy.cfg", "-f", "/etc/haproxy/conf.d/"]
