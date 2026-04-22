@@ -46,6 +46,8 @@ apk add --no-cache --virtual .build-deps \
 #
 # Prepare destination scratchfs
 #
+mkdir -p /scratchfs/etc/haproxy/conf.d /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
+
 # Create self-signed certificate
 openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
 chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
@@ -216,7 +218,6 @@ ls -lh /usr/sbin/haproxy
 file /usr/sbin/haproxy
 /usr/sbin/haproxy -vv
 
-mkdir -p /scratchfs/etc/haproxy/conf.d /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
 cp /usr/sbin/haproxy /scratchfs/usr/sbin/
 
 EOF
