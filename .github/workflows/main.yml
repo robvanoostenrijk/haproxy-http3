@@ -86,7 +86,7 @@ jobs:
           echo "#### Versions:" >> ./release.txt
 
           for library in ${libraries[@]}; do
-            VERSION=$(cat ./version-${library}.txt | awk '{ print "        " $0 }')
+            VERSION=$(cat ./haproxy-http3/version-${library}.txt | awk '{ print "        " $0 }')
 
             echo " - haproxy-${library}" >> ./release.txt
             echo "    <details>" >> ./release.txt
@@ -100,7 +100,7 @@ jobs:
 
           for library in ${libraries[@]}; do
             for platform in ${platforms[@]}; do
-              echo "    haproxy-${library}-${platform}.tar.xz: $(sha256sum ./haproxy-http3-${library}-${platform}.tar.xz | cut -d ' ' -f 1)" >> ./release.txt
+              echo "    haproxy-${library}-${platform}.tar.xz: $(sha256sum ./haproxy-http3/haproxy-http3-${library}-${platform}.tar.xz | cut -d ' ' -f 1)" >> ./release.txt
             done
 
             echo "" >> ./release.txt
