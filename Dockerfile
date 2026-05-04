@@ -3,12 +3,12 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ARG AWS_LC_TAG=v1.72.0 \
-	LIBRESSL_TAG=v4.2.1 \
-	OPENSSL_TAG=openssl-4.0.01 \
+ARG AWS_LC_TAG=v1.72.1 \
+	LIBRESSL_TAG=v4.3.1 \
+	OPENSSL_TAG=openssl-4.0.0 \
 	WOLFSSL_TAG=v5.9.1 \
 	LIBSLZ_TAG=v1.2.2 \
-	HAPROXY_VERSION=3.3.6
+	HAPROXY_VERSION=3.3.8
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -46,8 +46,6 @@ apk add --no-cache --virtual .build-deps \
 #
 # Prepare destination scratchfs
 #
-mkdir -p /scratchfs/etc/haproxy/conf.d /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
-
 # Create self-signed certificate
 openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
 chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
@@ -230,4 +228,4 @@ EXPOSE 8080/tcp 8443/tcp 8443/udp
 STOPSIGNAL SIGUSR1
 
 ENTRYPOINT ["/usr/sbin/haproxy"]
-CMD ["-f", "/etc/haproxy/haproxy.cfg", "-f", "/etc/haproxy/conf.d/"]
+CMD ["-f", "/etc/haproxy/haproxy.cfg"]
