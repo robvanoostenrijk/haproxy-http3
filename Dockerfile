@@ -43,12 +43,13 @@ apk add --no-cache --virtual .build-deps \
 	util-linux-misc \
 	--repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
+mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats 
+
 #
 # Prepare destination scratchfs
 #
 # Create self-signed certificate
 openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
-mkdir -p /scratchfs/etc/ssl /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats /scratchfs/usr/sbin
 chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
 
 #
