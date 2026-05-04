@@ -25,4 +25,4 @@ done
 
 echo "[i] Grab version information"
 docker pull --platform linux/arm64 "${IMAGE}:${VERSION}"
-docker run --platform linux/arm64 --rm -i --log-driver=none -a stdin -a stdout -a stderr --entrypoint "/usr/sbin/haproxy" "${IMAGE}:${VERSION}" -vv > ./dist/version.txt
+docker run --platform linux/arm64 --rm -i --log-driver=none -a stdin -a stdout -a stderr --entrypoint "/usr/sbin/haproxy" "${IMAGE}:${VERSION}" -vv > ./dist/version-${LIBRARY}.txt

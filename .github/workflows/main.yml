@@ -72,6 +72,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
+          merge-multiple: true
           pattern: haproxy-*
       - name: Release Text
         shell: bash
@@ -85,7 +86,7 @@ jobs:
           echo "#### Versions:" >> ./release.txt
 
           for library in ${libraries[@]}; do
-            VERSION=$(cat ./haproxy-${library}/version.txt | awk '{ print "        " $0 }')
+            VERSION=$(cat ./version-${library}.txt | awk '{ print "        " $0 }')
 
             echo " - haproxy-${library}" >> ./release.txt
             echo "    <details>" >> ./release.txt
@@ -99,7 +100,7 @@ jobs:
 
           for library in ${libraries[@]}; do
             for platform in ${platforms[@]}; do
-              echo "    haproxy-${library}-${platform}.tar.xz: $(sha256sum ./haproxy-${library}/haproxy-http3-${library}-${platform}.tar.xz | cut -d ' ' -f 1)" >> ./release.txt
+              echo "    haproxy-${library}-${platform}.tar.xz: $(sha256sum ./haproxy-http3-${library}-${platform}.tar.xz | cut -d ' ' -f 1)" >> ./release.txt
             done
 
             echo "" >> ./release.txt
@@ -109,14 +110,14 @@ jobs:
         with:
           body_path: ./release.txt
           files: |
-            ./haproxy-aws-lc/haproxy-http3-aws-lc-linux-amd64.tar.xz
-            ./haproxy-aws-lc/haproxy-http3-aws-lc-linux-arm64.tar.xz
-#            ./haproxy-libressl/haproxy-http3-libressl-linux-amd64.tar.xz
-#            ./haproxy-libressl/haproxy-http3-libressl-linux-arm64.tar.xz
-#            ./haproxy-openssl/haproxy-http3-openssl-linux-amd64.tar.xz
-#            ./haproxy-openssl/haproxy-http3-openssl-linux-arm64.tar.xz
-#            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-amd64.tar.xz
-#            ./haproxy-wolfssl/haproxy-http3-wolfssl-linux-arm64.tar.xz
+            ./haproxy-http3-aws-lc-linux-amd64.tar.xz
+            ./haproxy-http3-aws-lc-linux-arm64.tar.xz
+#            ./haproxy-http3-libressl-linux-amd64.tar.xz
+#            ./haproxy-http3-libressl-linux-arm64.tar.xz
+#            ./haproxy-http3-openssl-linux-amd64.tar.xz
+#            ./haproxy-http3-openssl-linux-arm64.tar.xz
+#            ./haproxy-http3-wolfssl-linux-amd64.tar.xz
+#            ./haproxy-http3-wolfssl-linux-arm64.tar.xz
       - name: Remove old packages
         uses: actions/delete-package-versions@v5
         with:
