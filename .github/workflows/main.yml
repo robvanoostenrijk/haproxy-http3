@@ -72,7 +72,6 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
-          merge-multiple: true
           pattern: haproxy-*
       - name: Release Text
         shell: bash
@@ -80,6 +79,8 @@ jobs:
           platforms=("linux-amd64" "linux-arm64")
           #libraries=("aws-lc" "libressl" "openssl" "wolfssl")
           libraries=("aws-lc")
+
+          ls -latR .
 
           git log -1 --no-merges --pretty=%B > ./release.txt
 
