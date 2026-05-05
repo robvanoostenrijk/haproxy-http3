@@ -58,7 +58,7 @@ jobs:
           path: |
             dist/haproxy-http3-${{ matrix.library }}-linux-amd64.tar.xz
             dist/haproxy-http3-${{ matrix.library }}-linux-arm64.tar.xz
-            dist/version.txt
+            dist/version-${{ matrix.library }}.txt
           retention-days: 1
 
   release:
