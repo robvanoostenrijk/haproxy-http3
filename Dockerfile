@@ -3,12 +3,12 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ARG AWS_LC_TAG=v1.72.1 \
+ARG AWS_LC_TAG=v1.73.0 \
 	LIBRESSL_TAG=v4.3.1 \
 	OPENSSL_TAG=openssl-4.0.0 \
 	WOLFSSL_TAG=v5.9.1 \
 	LIBSLZ_TAG=v1.2.2 \
-	HAPROXY_VERSION=3.3.8
+	HAPROXY_VERSION=3.3.9
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -43,7 +43,7 @@ apk add --no-cache --virtual .build-deps \
 	util-linux-misc \
 	--repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
-mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats 
+mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
 
 #
 # Prepare destination scratchfs
@@ -230,4 +230,4 @@ EXPOSE 8080/tcp 8443/tcp 8443/udp
 STOPSIGNAL SIGUSR1
 
 ENTRYPOINT ["/usr/sbin/haproxy"]
-CMD ["-f", "/etc/haproxy/haproxy.cfg"]
+CMD ["-f", "/etc/haproxy/haproxy.cfg", "-f", "/etc/haproxy/conf.d/"]

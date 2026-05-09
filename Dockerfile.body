@@ -32,6 +32,8 @@ apk add --no-cache --virtual .build-deps \
 	util-linux-misc \
 	--repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
+mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
+
 #
 # Prepare destination scratchfs
 #
@@ -217,4 +219,4 @@ EXPOSE 8080/tcp 8443/tcp 8443/udp
 STOPSIGNAL SIGUSR1
 
 ENTRYPOINT ["/usr/sbin/haproxy"]
-CMD ["-f", "/etc/haproxy/haproxy.cfg"]
+CMD ["-f", "/etc/haproxy/haproxy.cfg", "-f", "/etc/haproxy/conf.d/"]

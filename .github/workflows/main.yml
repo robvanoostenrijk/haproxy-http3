@@ -81,8 +81,6 @@ jobs:
           #libraries=("aws-lc" "libressl" "openssl" "wolfssl")
           libraries=("aws-lc")
 
-          ls -latR .
-
           git log -1 --no-merges --pretty=%B > ./release.txt
 
           echo "#### Versions:" >> ./release.txt
