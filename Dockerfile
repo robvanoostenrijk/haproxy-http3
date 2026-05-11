@@ -43,7 +43,7 @@ apk add --no-cache --virtual .build-deps \
 	util-linux-misc \
 	--repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
-mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
+mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats /scratchfs/etc/haproxy/conf.d
 
 #
 # Prepare destination scratchfs
