@@ -53,6 +53,7 @@ jobs:
           build-args: SSL_LIBRARY=${{ matrix.library }}
           context: .
           platforms: ${{ matrix.platform }}
+          provenance: false
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ matrix.library }}-${{ matrix.arch }},ghcr.io/${{ github.repository }}:${{ env.VERSION }}-${{ matrix.arch }}
       - name: Extract docker build artifacts
