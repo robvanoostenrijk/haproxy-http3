@@ -3,12 +3,12 @@ FROM alpine:latest AS builder
 
 ARG SSL_LIBRARY
 
-ARG AWS_LC_TAG=v5.8.0 \
+ARG AWS_LC_TAG=v5.11.0 \
 	LIBRESSL_TAG=v4.3.2 \
-	OPENSSL_TAG=openssl-4.0.2 \
-	WOLFSSL_TAG=v5.9.2 \
+	OPENSSL_TAG=openssl-4.1.01 \
+	WOLFSSL_TAG=v5.9.4 \
 	LIBSLZ_TAG=v1.3.1 \
-	HAPROXY_VERSION=3.4.4
+	HAPROXY_VERSION=3.4.6
 
 COPY --link ["scratchfs", "/scratchfs"]
 
@@ -126,7 +126,7 @@ if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
 	cd /usr/src/aws-lc
 	mkdir -p .openssl/lib .openssl/include
 	ln -sf /usr/src/aws-lc/include/openssl /usr/src/aws-lc/.openssl/include/openssl
-	CC=clang CXX=clang++ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release
+	CC=clang CXX=clang++ cmake -GNinja -B build --compile-no-warning-as-error -DCMAKE_BUILD_TYPE=Release
 	ninja -C build || exit 1
 	cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
 fi
