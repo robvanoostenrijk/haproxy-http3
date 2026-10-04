@@ -115,7 +115,7 @@ if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
 	cd /usr/src/aws-lc
 	mkdir -p .openssl/lib .openssl/include
 	ln -sf /usr/src/aws-lc/include/openssl /usr/src/aws-lc/.openssl/include/openssl
-	CC=clang CXX=clang++ cmake -GNinja -B build --compile-no-warning-as-error -DCMAKE_BUILD_TYPE=Release
+	CC=clang CXX=clang++ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 	ninja -C build || exit 1
 	cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
 fi
