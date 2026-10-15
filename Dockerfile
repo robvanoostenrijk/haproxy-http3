@@ -4,11 +4,11 @@ FROM alpine:latest AS builder
 ARG SSL_LIBRARY
 
 ARG AWS_LC_TAG=v5.11.0 \
-	LIBRESSL_TAG=v4.3.2 \
-	OPENSSL_TAG=openssl-4.1.01 \
+	LIBRESSL_TAG=v4.4.01 \
+	OPENSSL_TAG=openssl-4.1.02 \
 	WOLFSSL_TAG=v5.9.4 \
 	LIBSLZ_TAG=v1.3.1 \
-	HAPROXY_VERSION=3.4.6
+	HAPROXY_VERSION=3.4.7
 
 COPY --link ["scratchfs", "/scratchfs"]
 
