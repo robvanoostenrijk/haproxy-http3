@@ -11,14 +11,6 @@ ARG AWS_LC_TAG=v5.15.0 \
 
 RUN <<EOF
 set -ex
-case "${SSL_LIBRARY}" in
-	aws-lc|openssl|libressl|wolfssl) ;;
-	*)
-		echo "Unsupported SSL_LIBRARY: '${SSL_LIBRARY}' (expected: aws-lc, openssl, libressl, wolfssl)" >&2
-		exit 1
-		;;
-esac
-
 sed -i -r 's/v\d+\.\d+/edge/g' /etc/apk/repositories
 apk update
 apk upgrade --no-interactive --latest
@@ -29,6 +21,7 @@ apk add --no-cache \
 	gcc \
 	libc-dev \
 	linux-headers \
+	lld \
 	lua5.4-dev \
 	make \
 	openssl \
@@ -43,77 +36,78 @@ RUN <<EOF
 set -ex
 mkdir -p /usr/src
 
-#
-# OpenSSL library (with QUIC support)
-#
-if [ "${SSL_LIBRARY}" = "openssl" ]; then
-	apk add --no-cache autoconf automake
-	curl --fail --show-error --silent --location https://github.com/openssl/openssl/archive/refs/tags/${OPENSSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1
-	cd /usr/src/openssl
-	CC=clang ./config no-shared no-tests -ffunction-sections -fdata-sections
-	make -j"$(nproc)" && make install_sw
-fi
-
-#
-# LibreSSL
-#
-if [ "${SSL_LIBRARY}" = "libressl" ]; then
-	apk add --no-cache autoconf automake libtool git patch
-	curl --fail --show-error --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1
-	cd /usr/src/libressl
-	./autogen.sh
-	CC=clang CXX=clang++ CFLAGS="-O2 -ffunction-sections -fdata-sections" ./configure \
-		--disable-shared \
-		--disable-tests \
-		--enable-static
-	make -j"$(nproc)" install
-fi
-
-#
-# AWS-LC
-#
-if [ "${SSL_LIBRARY}" = "aws-lc" ]; then
-	apk add --no-cache cmake samurai
-	curl --fail --show-error --silent --location https://github.com/aws/aws-lc/archive/refs/tags/${AWS_LC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=aws-lc --strip-components=1
-	cd /usr/src/aws-lc
-	mkdir -p .openssl/lib .openssl/include
-	ln -sf /usr/src/aws-lc/include/openssl /usr/src/aws-lc/.openssl/include/openssl
-	CC=clang CXX=clang++ cmake -GNinja -B build \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DBUILD_TESTING=OFF \
-		-DBUILD_TOOL=OFF \
-		-DDISABLE_GO=ON \
-		-DCMAKE_C_FLAGS="-ffunction-sections -fdata-sections" \
-		-DCMAKE_CXX_FLAGS="-ffunction-sections -fdata-sections"
-	ninja -C build
-	cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
-fi
-
-#
-# WolfSSL
-#
-if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
-	apk add --no-cache autoconf automake libtool
-	curl --fail --show-error --silent --location -o /usr/src/wolfssl.tar.gz https://github.com/wolfSSL/wolfssl/archive/refs/tags/${WOLFSSL_TAG}-stable.tar.gz
-	mkdir /usr/src/wolfssl
-	tar -xzf /usr/src/wolfssl.tar.gz -C /usr/src/wolfssl --strip-components=1
-	rm /usr/src/wolfssl.tar.gz
-	cd /usr/src/wolfssl
-	./autogen.sh
-	CC=clang CXX=clang++ CFLAGS="-O2 -ffunction-sections -fdata-sections" ./configure \
-		--disable-examples \
-		--disable-shared \
-		--enable-static \
-		--enable-alpn \
-		--enable-earlydata \
-		--enable-haproxy \
-		--enable-quic \
-		--enable-tlsv12 \
-		--enable-tls13 \
-		--enable-curve25519 \
-		--enable-ed25519
-	make -j"$(nproc)" install
-fi
+case "${SSL_LIBRARY}" in
+	openssl)
+		#
+		# OpenSSL library (with QUIC support)
+		#
+		apk add --no-cache autoconf automake
+		curl --fail --show-error --silent --location https://github.com/openssl/openssl/archive/refs/tags/${OPENSSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=openssl --strip-components=1
+		cd /usr/src/openssl
+		CC=clang ./config no-shared no-tests no-apps no-module --libdir=lib -ffunction-sections -fdata-sections
+		make -j"$(nproc)" && make install_sw
+		;;
+	libressl)
+		#
+		# LibreSSL
+		#
+		apk add --no-cache autoconf automake libtool git patch
+		curl --fail --show-error --silent --location https://github.com/libressl-portable/portable/archive/refs/tags/${LIBRESSL_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=libressl --strip-components=1
+		cd /usr/src/libressl
+		./autogen.sh
+		CC=clang CXX=clang++ CFLAGS="-O2 -ffunction-sections -fdata-sections" ./configure \
+			--disable-shared \
+			--disable-tests \
+			--enable-static
+		make -j"$(nproc)" install
+		;;
+	aws-lc)
+		#
+		# AWS-LC
+		#
+		apk add --no-cache cmake samurai
+		curl --fail --show-error --silent --location https://github.com/aws/aws-lc/archive/refs/tags/${AWS_LC_TAG}.tar.gz | tar xz -C /usr/src --one-top-level=aws-lc --strip-components=1
+		cd /usr/src/aws-lc
+		mkdir -p .openssl/lib .openssl/include
+		ln -sf /usr/src/aws-lc/include/openssl /usr/src/aws-lc/.openssl/include/openssl
+		CC=clang CXX=clang++ cmake -GNinja -B build \
+			-DCMAKE_BUILD_TYPE=Release \
+			-DBUILD_TESTING=OFF \
+			-DBUILD_TOOL=OFF \
+			-DDISABLE_GO=ON \
+			-DCMAKE_C_FLAGS="-ffunction-sections -fdata-sections" \
+			-DCMAKE_CXX_FLAGS="-ffunction-sections -fdata-sections"
+		ninja -C build
+		cp build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib
+		;;
+	wolfssl)
+		#
+		# WolfSSL
+		#
+		apk add --no-cache autoconf automake libtool
+		mkdir -p /usr/src/wolfssl
+		curl --fail --show-error --silent --location https://github.com/wolfSSL/wolfssl/archive/refs/tags/${WOLFSSL_TAG}-stable.tar.gz | tar xz -C /usr/src/wolfssl --strip-components=1
+		cd /usr/src/wolfssl
+		./autogen.sh
+		CC=clang CXX=clang++ CFLAGS="-O2 -ffunction-sections -fdata-sections" ./configure \
+			--disable-examples \
+			--disable-shared \
+			--enable-static \
+			--enable-alpn \
+			--enable-earlydata \
+			--enable-haproxy \
+			--enable-quic \
+			--enable-tlsv12 \
+			--enable-tls13 \
+			--enable-curve25519 \
+			--enable-ed25519
+		make -j"$(nproc)" install
+		;;
+	*)
+		echo "Unsupported SSL_LIBRARY: '${SSL_LIBRARY}' (expected: aws-lc, openssl, libressl, wolfssl)" >&2
+		exit 1
+		;;
+esac
 EOF
 
 RUN <<EOF
@@ -149,30 +143,40 @@ MAKE_OPTS=" \
 	"
 
 MAKE_OPTS_EXTRA=""
-if [ "${SSL_LIBRARY}" = "wolfssl" ]; then
-	MAKE_OPTS_EXTRA=" \
-		SSL_INC=/usr/local/include/wolfssl \
-		SSL_LIB=/usr/local/lib \
-		USE_OPENSSL_WOLFSSL=1 \
-		"
-elif [ "${SSL_LIBRARY}" = "libressl" ]; then
-	MAKE_OPTS_EXTRA=" \
-		SSL_INC=/usr/local/include \
-		SSL_LIB=/usr/local/lib \
-		"
-elif [ "${SSL_LIBRARY}" = "aws-lc" ]; then
-	MAKE_OPTS_EXTRA=" \
-		SSL_INC=/usr/src/aws-lc/.openssl/include \
-		SSL_LIB=/usr/src/aws-lc/.openssl/lib \
-		USE_OPENSSL_AWSLC=1 \
-		"
-fi
+case "${SSL_LIBRARY}" in
+	openssl)
+		MAKE_OPTS_EXTRA=" \
+			SSL_INC=/usr/local/include \
+			SSL_LIB=/usr/local/lib \
+			"
+		;;
+	wolfssl)
+		MAKE_OPTS_EXTRA=" \
+			SSL_INC=/usr/local/include/wolfssl \
+			SSL_LIB=/usr/local/lib \
+			USE_OPENSSL_WOLFSSL=1 \
+			"
+		;;
+	libressl)
+		MAKE_OPTS_EXTRA=" \
+			SSL_INC=/usr/local/include \
+			SSL_LIB=/usr/local/lib \
+			"
+		;;
+	aws-lc)
+		MAKE_OPTS_EXTRA=" \
+			SSL_INC=/usr/src/aws-lc/.openssl/include \
+			SSL_LIB=/usr/src/aws-lc/.openssl/lib \
+			USE_OPENSSL_AWSLC=1 \
+			"
+		;;
+esac
 
 make -j "$(nproc)" \
 	$MAKE_OPTS \
 	$MAKE_OPTS_EXTRA \
-	ADD_CFLAGS="-ffunction-sections -fdata-sections" \
-	LDFLAGS="-static -s -Wl,--gc-sections" \
+	ADD_CFLAGS="-ffunction-sections -fdata-sections -flto=thin" \
+	LDFLAGS="-static -s -Wl,--gc-sections -Wl,-z,nostart-stop-gc -flto=thin -fuse-ld=lld" \
 	SUBVERS="-http3-${SSL_LIBRARY}"
 
 make PREFIX=/usr install-bin
@@ -192,7 +196,7 @@ mkdir -p /scratchfs/etc/ssl /scratchfs/usr/sbin /scratchfs/var/lib/haproxy/stats
 #
 # Create self-signed certificate
 /usr/bin/openssl req -x509 -newkey rsa:4096 -nodes -keyout /scratchfs/etc/ssl/localhost.pem.key -out /scratchfs/etc/ssl/localhost.pem -days 365 -sha256 -subj "/CN=localhost"
-chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats
+chown 1000:1000 /scratchfs/etc/ssl/localhost.pem.key /scratchfs/var/lib/haproxy /scratchfs/var/lib/haproxy/stats /scratchfs/var/run
 
 #
 # Mozilla CA cert bundle
