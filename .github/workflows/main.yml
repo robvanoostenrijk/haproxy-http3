@@ -128,8 +128,7 @@ jobs:
         shell: bash
         run: |
           platforms=("linux-amd64" "linux-arm64")
-          #libraries=("aws-lc" "libressl" "openssl" "wolfssl")
-          libraries=("aws-lc")
+          libraries=("aws-lc" "libressl" "openssl" "wolfssl")
 
           git log -1 --no-merges --pretty=%B > ./release.txt
 
