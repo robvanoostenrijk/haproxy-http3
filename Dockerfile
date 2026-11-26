@@ -21,7 +21,6 @@ apk add --no-cache \
 	gcc \
 	libc-dev \
 	linux-headers \
-	lld \
 	lua5.4-dev \
 	make \
 	openssl \
@@ -175,8 +174,8 @@ esac
 make -j "$(nproc)" \
 	$MAKE_OPTS \
 	$MAKE_OPTS_EXTRA \
-	ADD_CFLAGS="-ffunction-sections -fdata-sections -flto=thin" \
-	LDFLAGS="-static -s -Wl,--gc-sections -Wl,-z,nostart-stop-gc -flto=thin -fuse-ld=lld" \
+	ADD_CFLAGS="-ffunction-sections -fdata-sections" \
+	LDFLAGS="-static -s -Wl,--gc-sections" \
 	SUBVERS="-http3-${SSL_LIBRARY}"
 
 make PREFIX=/usr install-bin
