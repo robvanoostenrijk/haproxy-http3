@@ -13,6 +13,5 @@ cat <<- EOF > versions.env
 	LIBRESSL_TAG=v$(get_latest_tag libressl/portable v)
 	OPENSSL_TAG=openssl-$(get_latest_tag openssl/openssl openssl)
 	WOLFSSL_TAG=v$(get_latest_tag wolfSSL/wolfssl v)
-	LIBSLZ_TAG=v$(get_latest_tag wtarreau/libslz v)
 	HAPROXY_VERSION=3.4.7
 EOF

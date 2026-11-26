@@ -12,9 +12,9 @@ jobs:
     strategy:
       matrix:
         library:
-#          - libressl
-#          - openssl
-#          - wolfssl
+          - libressl
+          - openssl
+          - wolfssl
           - aws-lc
         os:
           - ubuntu-latest
@@ -77,9 +77,9 @@ jobs:
     strategy:
       matrix:
         library:
-#          - libressl
-#          - openssl
-#          - wolfssl
+          - libressl
+          - openssl
+          - wolfssl
           - aws-lc
     steps:
       - name: Login to GitHub Container Registry
@@ -162,12 +162,12 @@ jobs:
           files: |
             ./haproxy-http3-aws-lc-linux-amd64.tar.xz
             ./haproxy-http3-aws-lc-linux-arm64.tar.xz
-#            ./haproxy-http3-libressl-linux-amd64.tar.xz
-#            ./haproxy-http3-libressl-linux-arm64.tar.xz
-#            ./haproxy-http3-openssl-linux-amd64.tar.xz
-#            ./haproxy-http3-openssl-linux-arm64.tar.xz
-#            ./haproxy-http3-wolfssl-linux-amd64.tar.xz
-#            ./haproxy-http3-wolfssl-linux-arm64.tar.xz
+            ./haproxy-http3-libressl-linux-amd64.tar.xz
+            ./haproxy-http3-libressl-linux-arm64.tar.xz
+            ./haproxy-http3-openssl-linux-amd64.tar.xz
+            ./haproxy-http3-openssl-linux-arm64.tar.xz
+            ./haproxy-http3-wolfssl-linux-amd64.tar.xz
+            ./haproxy-http3-wolfssl-linux-arm64.tar.xz
       - name: Remove old packages
         uses: actions/delete-package-versions@v5
         with:
